@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * Contains wbx_formatters.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function wbx_formatters_theme() {
+  return [
+    'product_gallery' => [
+      'render element' => 'elements',
+    ],
+  ];
+}
+
+/**
+ * Preprocesses vars for product gallery template.
+ * @param $vars
+ */
+function template_preprocess_product_gallery(&$vars) {
+  $vars['gallery'] = $vars['elements']['gallery'];
+  $vars['thumbs'] = $vars['elements']['thumbs'];
+}
+
