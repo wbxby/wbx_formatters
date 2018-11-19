@@ -38,10 +38,9 @@ class PhoneWithOperator extends ListBase {
       // Change 80 to 375.
       // $cleaned_number = preg_replace('/^80/', '375', $cleaned_number, 1);
       $url = Url::fromUri('tel:+' . $cleaned_number);
-      $formatted_number = substr($cleaned_number, 0, 2) . ' ' .
-        substr($cleaned_number, 2, 2) . ' <span>' .
-        substr($cleaned_number, 4, 2) . ' ' .
-        substr($cleaned_number, 6, 2) . ' ' .
+      $formatted_number = '+' . substr($cleaned_number, 0, 3) . ' (' .
+        substr($cleaned_number, 3, 2) . ') <span>' .
+        substr($cleaned_number, 5, 3) . ' ' .
         substr($cleaned_number, 8, 2) . ' ' .
         substr($cleaned_number, 10, 2) . '</span>';
       if (isset($phones[$cleaned_number])) {
