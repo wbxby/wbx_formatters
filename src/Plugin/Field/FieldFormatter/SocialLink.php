@@ -32,7 +32,13 @@ class SocialLink extends ListBase {
       $icon_class = 'icon-' . array_search($item->first, $allowed_values);
       $icon = Markup::create('<i class="' . $icon_class . '"></i>');
       $url = $item->second['#url'];
-      $url->setOptions(['attributes' => ['target' => '_blank']]);
+      $url->setOptions([
+        'attributes' => [
+          'target' => '_blank',
+          'rel' => 'noreferrer',
+          'aria-label' => $item->first,
+        ]
+      ]);
       $link = Link::fromTextAndUrl($icon, $url)->toString();
       $element[$delta] = [
         '#markup' => $link,
