@@ -5,7 +5,10 @@
  * Contains wbx_formatters.module.
  */
 
-use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Component\Utility\Unicode;
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Url;
+use Drupal\file\Entity\File;
 
 /**
  * Implements hook_theme().
@@ -13,6 +16,9 @@ use Drupal\Core\Routing\RouteMatchInterface;
 function wbx_formatters_theme() {
   return [
     'product_gallery' => [
+      'render element' => 'elements',
+    ],
+    'youtube_colorbox' => [
       'render element' => 'elements',
     ],
   ];
@@ -25,5 +31,230 @@ function wbx_formatters_theme() {
 function template_preprocess_product_gallery(&$vars) {
   $vars['gallery'] = $vars['elements']['gallery'];
   $vars['thumbs'] = $vars['elements']['thumbs'];
+}
+
+/**
+ * Preprocesses vars for youtube colorbox template.
+ * @param $vars
+ */
+function template_preprocess_youtube_colorbox(&$variables) {
+  $video_id = $variables['elements']['#video_id'];
+  $image_style = $variables['elements']['#image_style'];
+
+  // Build the image element's alt attribute value (for accessibility).
+  $alt = t('Embedded thumbnail');
+  if (!empty($variables['entity_title'])) {
+    $alt .= ' ' . t('for @entity_title', array(
+        '@entity_title' => $variables['entity_title'],
+      ));
+  }
+
+  // Check to see if a thumbnail exists locally.
+  $uri = youtube_build_thumbnail_uri($video_id);
+  if (!file_exists($uri)) {
+    // Retrieve the image from YouTube.
+    if (!youtube_get_remote_image($video_id)) {
+      // Use the remote source if local copy fails.
+      $uri = youtube_build_remote_image_path($video_id);
+    }
+  }
+
+  // Build the initial image render array.
+  $variables['image'] = array(
+    '#theme' => 'image',
+    '#uri' => $uri,
+    '#alt' => $alt,
+  );
+
+  // If an image style has been chosen in the field's display settings, alter
+  // the render array to use that image style. Remote images cannot be rendered
+  // through an image style.
+  if ($image_style) {
+    $variables['image']['#theme'] = 'image_style';
+    $variables['image']['#style_name'] = $image_style;
+  }
+
+  static $gallery_token = NULL;
+
+  $item = $variables['elements']['#item'];
+  $entity = $variables['elements']['#entity'];
+  $settings = $variables['elements']['#settings'];
+  $classes_array = ['colorbox'];
+  $data_cbox_img_attrs = [];
+
+  //@TODO: Make this settings editable.
+  // Build the caption.
+  $entity_title = $entity->label();
+  $entity_type = $entity->getEntityTypeId();
+  $entity_bundle = $entity->bundle();
+
+  if (!isset($settings['colorbox_caption'])) {
+    $settings['colorbox_caption'] = '';
+  }
+
+  switch ($settings['colorbox_caption']) {
+    case 'auto':
+      // If the title is empty use alt or the entity title in that order.
+      if (!empty($item->title)) {
+        $caption = $item->title;
+      }
+      elseif (!empty($item->alt)) {
+        $caption = $item->alt;
+      }
+      elseif (!empty($entity_title)) {
+        $caption = $entity_title;
+      }
+      else {
+        $caption = '';
+      }
+      break;
+
+    case 'title':
+      $caption = $item->title;
+      break;
+
+    case 'alt':
+      $caption = $item->alt;
+      break;
+
+    case 'entity_title':
+      $caption = $entity_title;
+      break;
+
+    case 'custom':
+      $token_service = \Drupal::token();
+      $caption = $token_service->replace($settings['colorbox_caption_custom'], [$entity_type => $entity, 'file' => $item], ['clear' => TRUE]);
+      break;
+
+    default:
+      $caption = '';
+  }
+
+  // Shorten the caption for the example styles or when caption
+  // shortening is active.
+  $config = \Drupal::config('colorbox.settings');
+  $colorbox_style = $config->get('colorbox_style');
+  $trim_length = $config->get('colorbox_caption_trim_length');
+  if (((strpos($colorbox_style, 'colorbox/example') !== FALSE) || $config->get('colorbox_caption_trim')) && (Unicode::strlen($caption) > $trim_length)) {
+    $caption = Unicode::substr($caption, 0, $trim_length - 5) . '...';
+  }
+
+  // Build the gallery id.
+  $id = $entity->id();
+  $entity_id = !empty($id) ? $entity_bundle . '-' . $id : 'entity-id';
+  $field_name = $item->getParent()->getName();
+  if (!isset($settings['colorbox_gallery'])) {
+    $settings['colorbox_gallery'] = '';
+  }
+  switch ($settings['colorbox_gallery']) {
+    case 'post':
+      $gallery_id = 'gallery-' . $entity_id;
+      break;
+
+    case 'page':
+      $gallery_id = 'gallery-all';
+      break;
+
+    case 'field_post':
+      $gallery_id = 'gallery-' . $entity_id . '-' . $field_name;
+      break;
+
+    case 'field_page':
+      $gallery_id = 'gallery-' . $field_name;
+      break;
+
+    case 'custom':
+      $token_service = \Drupal::token();
+      $gallery_id = $token_service->replace($settings['colorbox_gallery_custom'], [$entity_type => $entity, 'file' => $item], ['clear' => TRUE]);
+      break;
+
+    default:
+      $gallery_id = 'youtube';
+  }
+
+  // If gallery id is not empty add unique per-request token to avoid
+  // images being added manually to galleries.
+  if (!empty($gallery_id) && $config->get('advanced.unique_token')) {
+    // Check if gallery token has already been set, we need to reuse
+    // the token for the whole request.
+    if (is_null($gallery_token)) {
+      // We use a short token since randomness is not critical.
+      $gallery_token = Crypt::randomBytesBase64(8);
+    }
+    $gallery_id = $gallery_id . '-' . $gallery_token;
+  }
+
+  // Src link.
+  // Add global YouTube module configuration to the settings array.
+  if (!isset($variables['settings'])) {
+    $variables['settings'] = [];
+  }
+  $variables['settings'] += [
+    'youtube_suggest' => \Drupal::config('youtube.settings')->get('youtube_suggest'),
+    'youtube_privacy' => \Drupal::config('youtube.settings')->get('youtube_privacy'),
+    'youtube_player_class' => \Drupal::config('youtube.settings')->get('youtube_player_class'),
+    'youtube_modestbranding' => \Drupal::config('youtube.settings')->get('youtube_modestbranding'),
+    'youtube_theme' => \Drupal::config('youtube.settings')->get('youtube_theme'),
+    'youtube_color' => \Drupal::config('youtube.settings')->get('youtube_color'),
+    'youtube_enablejsapi' => \Drupal::config('youtube.settings')->get('youtube_enablejsapi'),
+    'youtube_wmode' => \Drupal::config('youtube.settings')->get('youtube_wmode'),
+  ];
+
+  // Build the query for the embedded video using module and field settings.
+  $query = array();
+  if (!$variables['settings']['youtube_suggest']) {
+    $query['rel'] = '0';
+  }
+  if ($variables['settings']['youtube_modestbranding']) {
+    $query['modestbranding'] = '1';
+  }
+  if ($variables['settings']['youtube_theme']) {
+    $query['theme'] = 'light';
+  }
+  if ($variables['settings']['youtube_color']) {
+    $query['color'] = 'white';
+  }
+  if ($variables['settings']['youtube_enablejsapi']) {
+    global $base_root;
+    $query['enablejsapi'] = '1';
+    $query['origin'] = $base_root;
+  }
+  if ($variables['settings']['youtube_wmode']) {
+    $query['wmode'] = 'opaque';
+  }
+  if (isset($variables['settings']['youtube_autoplay']) && $variables['settings']['youtube_autoplay']) {
+    $query['autoplay'] = '1';
+  }
+  if (isset($variables['settings']['youtube_loop']) && $variables['settings']['youtube_loop']) {
+    $query['loop'] = '1';
+    $query['playlist'] = $variables['video_id'];
+  }
+  if (isset($variables['settings']['youtube_showinfo']) && $variables['settings']['youtube_showinfo']) {
+    $query['showinfo'] = '0';
+  }
+  if (isset($variables['settings']['youtube_controls']) && $variables['settings']['youtube_controls']) {
+    $query['controls'] = '0';
+  }
+  if (isset($variables['settings']['youtube_autohide']) && $variables['settings']['youtube_autohide']) {
+    $query['autohide'] = '1';
+  }
+  if (isset($variables['settings']['youtube_iv_load_policy']) && $variables['settings']['youtube_iv_load_policy']) {
+    $query['iv_load_policy'] = '3';
+  }
+
+  // Use the module's privacy configuration to determine the domain.
+  $domain = !$variables['settings']['youtube_privacy'] ? 'youtube.com' : 'youtube-nocookie.com';
+  $path = 'https://www.' . $domain . '/embed/' . $variables['elements']['#video_id'];
+
+  // Build the src attribute with the path and query array constructed above.
+  $url = Url::fromUri($path, ['query' => $query]);
+  $variables['url'] = $url->toString();
+
+  $variables['attributes']['title'] = $caption;
+  $variables['attributes']['data-colorbox-gallery'] = $gallery_id;
+  $variables['attributes']['class'] = $classes_array;
+  if (!empty($data_cbox_img_attrs)) {
+    $variables['attributes']['data-cbox-img-attrs'] = '{' . implode(',', $data_cbox_img_attrs) . '}';
+  }
 }
 
