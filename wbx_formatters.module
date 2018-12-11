@@ -79,7 +79,7 @@ function template_preprocess_youtube_colorbox(&$variables) {
   $item = $variables['elements']['#item'];
   $entity = $variables['elements']['#entity'];
   $settings = $variables['elements']['#settings'];
-  $classes_array = ['colorbox'];
+  $classes_array = ['colorbox-youtube'];
   $data_cbox_img_attrs = [];
 
   //@TODO: Make this settings editable.

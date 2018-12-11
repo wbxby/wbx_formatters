@@ -134,8 +134,11 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
     if ($this->attachment->isApplicable()) {
       $this->attachment->attach($element);
     }
-    $element['#attached']['drupalSettings']['colorbox']['iframe'] = TRUE;
-    $element['#attached']['drupalSettings']['colorbox'] += [
+    $element['#attached']['library'][] = 'wbx_formatters/colorbox-youtube-init';
+    $element['#attached']['drupalSettings']['colorboxYoutube'] = $element['#attached']['drupalSettings']['colorbox'];
+    unset($element['#attached']['drupalSettings']['colorbox']);
+    $element['#attached']['drupalSettings']['colorboxYoutube']['iframe'] = TRUE;
+    $element['#attached']['drupalSettings']['colorboxYoutube'] += [
       'width' => 640,
       'height' => 480,
     ];

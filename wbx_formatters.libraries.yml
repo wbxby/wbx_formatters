@@ -1,0 +1,7 @@
+colorbox-youtube-init:
+  version: VERSION
+  js:
+    js/colorbox.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
