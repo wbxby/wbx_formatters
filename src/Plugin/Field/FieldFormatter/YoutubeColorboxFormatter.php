@@ -9,6 +9,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\colorbox\ElementAttachmentInterface;
+use Drupal\media\Entity\MediaType;
+use Drupal\media\Plugin\media\Source\OEmbedInterface;
 
 /**
  * Plugin implementation of the 'youtube_colorbox_formatter' formatter.
@@ -17,7 +19,10 @@ use Drupal\colorbox\ElementAttachmentInterface;
  *   id = "youtube_colorbox_formatter",
  *   label = @Translation("Youtube colorbox formatter"),
  *   field_types = {
- *     "youtube"
+ *     "youtube",
+ *     "link",
+ *     "string",
+ *     "string_long",
  *   }
  * )
  */
@@ -121,7 +126,7 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
 
       $element[$delta] = [
         '#theme' => 'youtube_colorbox',
-        '#video_id' => $item->video_id,
+        '#video_id' => $item->video_id ?: youtube_get_video_id($item->value),
         '#entity_title' => $items->getEntity()->label(),
         '#image_style' => $this->getSetting('image_style'),
         '#settings' => $this->getSettings(),
@@ -144,6 +149,28 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
     ];
 
     return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function isApplicable(FieldDefinitionInterface $field_definition) {
+    if ($field_definition->getType() === 'youtube') {
+      return TRUE;
+    }
+    if ($field_definition->getTargetEntityTypeId() !== 'media') {
+      return FALSE;
+    }
+
+    if (parent::isApplicable($field_definition)) {
+      $media_type = $field_definition->getTargetBundle();
+
+      if ($media_type) {
+        $media_type = MediaType::load($media_type);
+        return $media_type && $media_type->getSource() instanceof OEmbedInterface;
+      }
+    }
+    return FALSE;
   }
 
 }
