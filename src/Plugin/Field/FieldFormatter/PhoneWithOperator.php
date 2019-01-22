@@ -4,6 +4,7 @@ namespace Drupal\wbx_formatters\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\double_field\Plugin\Field\FieldFormatter\ListBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Render\Markup;
@@ -22,6 +23,31 @@ class PhoneWithOperator extends ListBase {
   /**
    * {@inheritdoc}
    */
+  public static function defaultSettings() {
+    return ['group' => TRUE] + parent::defaultSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $element = parent::settingsForm($form, $form_state);
+
+    $settings = $this->getSettings();
+
+    $element['group'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Group messengers by phone'),
+      '#default_value' => $settings['group'],
+      '#weight' => -15,
+    ];
+
+    return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function viewElements(FieldItemListInterface $items, $langcode) {
     $element = [];
     $anyItem = reset($items);
@@ -30,6 +56,7 @@ class PhoneWithOperator extends ListBase {
     $item_settings = $definition->get('settings');
     $allowed_values = $item_settings['first']['allowed_values'];
     $phones = [];
+    $group = $this->getSetting('group');
     foreach ($items as $delta => $item) {
       $icon_class = 'icon-' . array_search($item->first, $allowed_values);
       $icon = '<i class="' . $icon_class . '"></i>';
@@ -43,10 +70,11 @@ class PhoneWithOperator extends ListBase {
         substr($cleaned_number, 5, 3) . ' ' .
         substr($cleaned_number, 8, 2) . ' ' .
         substr($cleaned_number, 10, 2) . '</span>';
-      if (isset($phones[$cleaned_number])) {
-        $phones[$cleaned_number]['icons'][] = $icon;
+      $key = $group ? $cleaned_number : $delta;
+      if (isset($phones[$key])) {
+        $phones[$key]['icons'][] = $icon;
       } else {
-        $phones[$cleaned_number] = [
+        $phones[$key] = [
           'icons' => [$icon],
           'url' => $url,
           'formatted_number' => $formatted_number,
