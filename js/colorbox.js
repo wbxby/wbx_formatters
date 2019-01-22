@@ -20,9 +20,35 @@
         return $(this).data('colorbox-gallery')
       };
 
+      // Check if there are images gallery in this field.
+      var reloadNeeds = false;
       $('.colorbox-youtube', context)
         .once('init-colorbox-youtube')
-        .colorbox(settings.colorboxYoutube);
+        .each(function() {
+          var attachTo = $(this).data('attach-to');
+          if (typeof attachTo !== 'undefined') {
+            var targetGallery = $(attachTo).find('.colorbox');
+            if (targetGallery.length) {
+              var galleryToken = targetGallery.data('colorbox-gallery');
+              if (typeof galleryToken !== 'undefined' && galleryToken.length) {
+                $(this).attr('data-colorbox-gallery', galleryToken);
+                reloadNeeds = true;
+              }
+            }
+          }
+        });
+      if (reloadNeeds) {
+        settings.colorbox.iframe = true;
+        settings.colorbox.height = '80%';
+        settings.colorbox.width = '80%';
+        $('.colorbox, .colorbox-youtube', context)
+          .once('init-colorbox')
+          .colorbox(settings.colorbox);
+      } else {
+        $('.colorbox-youtube', context)
+          .once('init-colorbox-youtube')
+          .colorbox(settings.colorboxYoutube);
+      }
     }
   };
 

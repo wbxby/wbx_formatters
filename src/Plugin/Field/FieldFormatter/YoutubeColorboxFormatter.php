@@ -78,6 +78,9 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
   public static function defaultSettings() {
     return [
         'image_style' => 'thumbnail',
+        'colorbox_gallery' => 'post',
+        'colorbox_gallery_custom' => '',
+        'attach_to' => '',
       ] + parent::defaultSettings();
   }
 
@@ -93,6 +96,65 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
       '#options' => image_style_options(FALSE),
       '#default_value' => $this->getSetting('image_style'),
       '#empty_option' => t('None (original image)'),
+    ];
+
+    $gallery = [
+      'post' => $this->t('Per post gallery'),
+      'page' => $this->t('Per page gallery'),
+      'field_post' => $this->t('Per field in post gallery'),
+      'field_page' => $this->t('Per field in page gallery'),
+      'custom' => $this->t('Custom (with tokens)'),
+      'none' => $this->t('No gallery'),
+    ];
+    $elements['colorbox_gallery'] = [
+      '#title' => $this->t('Gallery (image grouping)'),
+      '#type' => 'select',
+      '#default_value' => $this->getSetting('colorbox_gallery'),
+      '#options' => $gallery,
+      '#description' => $this->t('How Colorbox should group the image galleries.'),
+    ];
+    $elements['colorbox_gallery_custom'] = [
+      '#title' => $this->t('Custom gallery'),
+      '#type' => 'textfield',
+      '#default_value' => $this->getSetting('colorbox_gallery_custom'),
+      '#description' => $this->t('All images on a page with the same gallery value (rel attribute) will be grouped together. It must only contain lowercase letters, numbers, and underscores.'),
+      '#required' => FALSE,
+      '#states' => [
+        'visible' => [
+          ':input[name$="[settings_edit_form][settings][colorbox_gallery]"]' => ['value' => 'custom'],
+        ],
+      ],
+    ];
+    if (\Drupal::moduleHandler()->moduleExists('token')) {
+      $elements['colorbox_token_gallery'] = [
+        '#type' => 'fieldset',
+        '#title' => t('Replacement patterns'),
+        '#theme' => 'token_tree_link',
+        '#token_types' => [$form['#entity_type'], 'file'],
+        '#states' => [
+          'visible' => [
+            ':input[name$="[settings_edit_form][settings][colorbox_gallery]"]' => ['value' => 'custom'],
+          ],
+        ],
+      ];
+    }
+    else {
+      $elements['colorbox_token_gallery'] = [
+        '#type' => 'fieldset',
+        '#title' => $this->t('Replacement patterns'),
+        '#description' => '<strong class="error">' . $this->t('For token support the <a href="@token_url">token module</a> must be installed.', ['@token_url' => 'http://drupal.org/project/token']) . '</strong>',
+        '#states' => [
+          'visible' => [
+            ':input[name$="[settings_edit_form][settings][colorbox_gallery]"]' => ['value' => 'custom'],
+          ],
+        ],
+      ];
+    }
+    $elements['attach_to'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Attach to'),
+      '#default_value' => $this->getSetting('attach_to'),
+      '#description' => $this->t('Selector, that contains another colorbox gallery, to which video gallery should be attached.'),
     ];
 
     return $elements;
@@ -111,6 +173,20 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
     }
     if ($image_link) {
       $summary[] = t('Linked to: @image_link.', ['@image_link' => $image_link]);
+    }
+    $gallery = [
+      'post' => $this->t('Per post gallery'),
+      'page' => $this->t('Per page gallery'),
+      'field_post' => $this->t('Per field in post gallery'),
+      'field_page' => $this->t('Per field in page gallery'),
+      'custom' => $this->t('Custom (with tokens)'),
+      'none' => $this->t('No gallery'),
+    ];
+    if ($this->getSetting('colorbox_gallery')) {
+      $summary[] = $this->t('Colorbox gallery type: @type', ['@type' => $gallery[$this->getSetting('colorbox_gallery')]]) . ($this->getSetting('colorbox_gallery') == 'custom' ? ' (' . $this->getSetting('colorbox_gallery_custom') . ')' : '');
+    }
+    if ($this->getSetting('attach_to')) {
+      $summary[] = $this->t('Attach to: ') . $this->getSetting('attach_to');
     }
 
     return $summary;
