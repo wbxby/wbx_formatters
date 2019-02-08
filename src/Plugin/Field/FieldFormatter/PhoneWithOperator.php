@@ -46,6 +46,26 @@ class PhoneWithOperator extends ListBase {
   }
 
   /**
+   * Create URL for specified provider, that may be messenger or phone.
+   * @param $number
+   * @param null $provider
+   *
+   * @return string
+   */
+  protected function createUri($number, $provider = NULL) {
+    switch ($provider) {
+      case 'whatsapp':
+        return 'whatsapp://send?phone=' . $number;
+      case 'viber':
+        return 'viber://chat?number=+' . $number;
+      case 'telegram':
+        return 'tg://resolve?domain=' . $number;
+      default:
+        return 'tel:+' . $number;
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
@@ -58,13 +78,19 @@ class PhoneWithOperator extends ListBase {
     $phones = [];
     $group = $this->getSetting('group');
     foreach ($items as $delta => $item) {
-      $icon_class = 'icon-' . array_search($item->first, $allowed_values);
+      $provider = array_search($item->first, $allowed_values);
+      $icon_class = 'icon-' . $provider;
       $icon = '<i class="' . $icon_class . '"></i>';
       // Remove non-numeric characters.
       $cleaned_number = preg_replace("/\D/",'', $item->second);
       // Change 80 to 375.
       // $cleaned_number = preg_replace('/^80/', '375', $cleaned_number, 1);
-      $url = Url::fromUri('tel:+' . $cleaned_number);
+      if ($group) {
+        $url = 'tel:+' . $cleaned_number;
+      } else {
+        $url = $this->createUri($cleaned_number, $provider);
+      }
+
       $formatted_number = '+' . substr($cleaned_number, 0, 3) . ' (' .
         substr($cleaned_number, 3, 2) . ') <span>' .
         substr($cleaned_number, 5, 3) . ' ' .
@@ -82,8 +108,9 @@ class PhoneWithOperator extends ListBase {
       }
     }
     foreach ($phones as $number => $phone) {
-      $markup = Markup::create($phone['formatted_number'] . '<span class="phone-icons">' . implode('', $phone['icons']) . '</span>');
-      $link = Link::fromTextAndUrl($markup, $phone['url'])->toString();
+      $markup = Markup::create($phone['formatted_number'] .
+        '<span class="phone-icons">' . implode('', $phone['icons']) . '</span>');
+      $link = Markup::create('<a href="' . $phone['url'] . '">' . $markup . '</a>');
       $element[] = [
         '#markup' => $link,
       ];
