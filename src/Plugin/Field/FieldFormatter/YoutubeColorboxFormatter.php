@@ -81,6 +81,8 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
         'colorbox_gallery' => 'post',
         'colorbox_gallery_custom' => '',
         'attach_to' => '',
+        'no_image' => FALSE,
+        'no_image_text' => t('Watch video'),
       ] + parent::defaultSettings();
   }
 
@@ -96,6 +98,11 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
       '#options' => image_style_options(FALSE),
       '#default_value' => $this->getSetting('image_style'),
       '#empty_option' => t('None (original image)'),
+      '#states' => [
+        'visible' => [
+          ':input[name$="[settings_edit_form][settings][no_image]"]' => ['checked' => FALSE],
+        ],
+      ],
     ];
 
     $gallery = [
@@ -155,6 +162,21 @@ class YoutubeColorboxFormatter extends FormatterBase implements ContainerFactory
       '#title' => $this->t('Attach to'),
       '#default_value' => $this->getSetting('attach_to'),
       '#description' => $this->t('Selector, that contains another colorbox gallery, to which video gallery should be attached.'),
+    ];
+    $elements['no_image'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t("Don't show image"),
+      '#default_value' =>$this->getSetting('no_image'),
+    ];
+    $elements['no_image_text'] = [
+      '#type' => 'textfield',
+      '#default_value' => $this->getSetting('no_image_text'),
+      '#title' => $this->t('Link text'),
+      '#states' => [
+        'visible' => [
+          ':input[name$="[settings_edit_form][settings][no_image]"]' => ['checked' => TRUE],
+        ],
+      ],
     ];
 
     return $elements;

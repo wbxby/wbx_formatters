@@ -42,11 +42,9 @@
         settings.colorbox.height = '80%';
         settings.colorbox.width = '80%';
         $('.colorbox, .colorbox-youtube', context)
-          .once('init-colorbox')
           .colorbox(settings.colorbox);
       } else {
         $('.colorbox-youtube', context)
-          .once('init-colorbox-youtube')
           .colorbox(settings.colorboxYoutube);
       }
     }

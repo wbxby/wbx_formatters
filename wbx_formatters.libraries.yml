@@ -5,3 +5,4 @@ colorbox-youtube-init:
   dependencies:
     - core/jquery
     - core/drupal
+    - colorbox/colorbox

@@ -59,26 +59,33 @@ function template_preprocess_youtube_colorbox(&$variables) {
     }
   }
 
-  // Build the initial image render array.
-  $variables['image'] = array(
-    '#theme' => 'image',
-    '#uri' => $uri,
-    '#alt' => $alt,
-  );
-
-  // If an image style has been chosen in the field's display settings, alter
-  // the render array to use that image style. Remote images cannot be rendered
-  // through an image style.
-  if ($image_style) {
-    $variables['image']['#theme'] = 'image_style';
-    $variables['image']['#style_name'] = $image_style;
+  $settings = $variables['elements']['#settings'];
+  $no_image = $settings['no_image'];
+  if ($no_image) {
+    $variables['image'] = $settings['no_image_text'];
+  } else {
+    // Build the initial image render array.
+    $variables['image'] = array(
+      '#theme' => 'image',
+      '#uri' => $uri,
+      '#alt' => $alt,
+    );
+    // If an image style has been chosen in the field's display settings, alter
+    // the render array to use that image style. Remote images cannot be rendered
+    // through an image style.
+    if ($image_style) {
+      $variables['image']['#theme'] = 'image_style';
+      $variables['image']['#style_name'] = $image_style;
+    }
   }
+
+
 
   static $gallery_token = NULL;
 
   $item = $variables['elements']['#item'];
   $entity = $variables['elements']['#entity'];
-  $settings = $variables['elements']['#settings'];
+
   $classes_array = ['colorbox-youtube'];
   $data_cbox_img_attrs = [];
 
