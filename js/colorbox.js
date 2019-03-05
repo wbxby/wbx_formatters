@@ -22,6 +22,7 @@
 
       // Check if there are images gallery in this field.
       var reloadNeeds = false;
+      var group = 'group1';
       $('.colorbox-youtube', context)
         .once('init-colorbox-youtube')
         .each(function() {
@@ -33,16 +34,16 @@
               if (typeof galleryToken !== 'undefined' && galleryToken.length) {
                 $(this).attr('data-colorbox-gallery', galleryToken);
                 reloadNeeds = true;
+                group = galleryToken;
               }
             }
           }
         });
       if (reloadNeeds) {
-        settings.colorbox.iframe = true;
-        settings.colorbox.height = '80%';
-        settings.colorbox.width = '80%';
-        $('.colorbox, .colorbox-youtube', context)
-          .colorbox(settings.colorbox);
+        settings.colorbox.rel = group;
+        settings.colorboxYoutube.rel = group;
+        $('.colorbox', context).colorbox(settings.colorbox);
+        $('.colorbox-youtube', context).colorbox(settings.colorboxYoutube);
       } else {
         $('.colorbox-youtube', context)
           .colorbox(settings.colorboxYoutube);
