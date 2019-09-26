@@ -42,7 +42,7 @@
       if (reloadNeeds) {
         settings.colorbox.rel = group;
         settings.colorboxYoutube.rel = group;
-        $('.colorbox', context).colorbox(settings.colorbox);
+        // $('.colorbox', context).colorbox(settings.colorbox);
         $('.colorbox-youtube', context).colorbox(settings.colorboxYoutube);
       } else {
         $('.colorbox-youtube', context)
