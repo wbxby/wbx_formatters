@@ -24,7 +24,10 @@ class PhoneWithOperator extends ListBase {
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return ['group' => TRUE] + parent::defaultSettings();
+    return [
+      'group' => TRUE,
+      'number_format' => '+XXX (XX) <span>XXX XX XX</span>'
+      ] + parent::defaultSettings();
   }
 
   /**
@@ -40,6 +43,13 @@ class PhoneWithOperator extends ListBase {
       '#title' => $this->t('Group messengers by phone'),
       '#default_value' => $settings['group'],
       '#weight' => -15,
+    ];
+
+    $element['number_format'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Phone number format'),
+      '#default_value' => $settings['number_format'],
+      '#description' => $this->t('For example "+XXX (XX) <span>XXX XX XX</span>" where "X" means number')
     ];
 
     return $element;
@@ -63,6 +73,41 @@ class PhoneWithOperator extends ListBase {
       default:
         return 'tel:+' . $number;
     }
+  }
+
+  /**
+   * Convert nember to provided format.
+   * @param $number
+   *
+   * @return string
+   */
+  protected function formatNumber($number) {
+    $format = $this->getSetting('number_format');
+    if (empty($format)) {
+      return $number;
+    }
+    $index = 0;
+    $format_index = 0;
+    $formatted = '';
+    $number_length = strlen($number) - 1; // Respect zero index.
+    while ($index <= $number_length) {
+      if (isset($format[$format_index])) {
+        if ($format[$format_index] === 'X') {
+          $formatted .= $number[$index];
+          $index++;
+          $format_index++;
+        }
+        else {
+          $formatted .= $format[$format_index];
+          $format_index++;
+        }
+      }
+      else {
+        $formatted .= $number[$index];
+        $index++;
+      }
+    }
+    return $formatted;
   }
 
   /**
@@ -91,11 +136,7 @@ class PhoneWithOperator extends ListBase {
         $url = $this->createUri($cleaned_number, $provider);
       }
 
-      $formatted_number = '+' . substr($cleaned_number, 0, 3) . ' (' .
-        substr($cleaned_number, 3, 2) . ') <span>' .
-        substr($cleaned_number, 5, 3) . ' ' .
-        substr($cleaned_number, 8, 2) . ' ' .
-        substr($cleaned_number, 10, 2) . '</span>';
+      $formatted_number = $this->formatNumber($cleaned_number);
       $key = $group ? $cleaned_number : $delta;
       if (isset($phones[$key])) {
         $phones[$key]['icons'][] = $icon;
