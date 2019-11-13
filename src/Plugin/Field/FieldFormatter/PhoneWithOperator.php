@@ -90,6 +90,7 @@ class PhoneWithOperator extends ListBase {
     $format_index = 0;
     $formatted = '';
     $number_length = strlen($number) - 1; // Respect zero index.
+    $format_length = strlen($format) - 1; // Respect zero index.
     while ($index <= $number_length) {
       if (isset($format[$format_index])) {
         if ($format[$format_index] === 'X') {
@@ -105,6 +106,13 @@ class PhoneWithOperator extends ListBase {
       else {
         $formatted .= $number[$index];
         $index++;
+      }
+    }
+    // Append rest letters of format.
+    if ($format_index < $format_length) {
+      while ($format_index <= $format_length) {
+        $formatted .= $format[$format_index];
+        $format_index++;
       }
     }
     return $formatted;
