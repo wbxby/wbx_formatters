@@ -23,7 +23,7 @@ class PhoneWithOperator extends ListBase {
   /**
    * {@inheritdoc}
    */
-  public static function defaultSettings() {
+  public static function defaultSettings(): array {
     return [
       'group' => TRUE,
       'number_format' => '+XXX (XX) <span>XXX XX XX</span>'
@@ -33,7 +33,7 @@ class PhoneWithOperator extends ListBase {
   /**
    * {@inheritdoc}
    */
-  public function settingsForm(array $form, FormStateInterface $form_state) {
+  public function settingsForm(array $form, FormStateInterface $form_state): array {
     $element = parent::settingsForm($form, $form_state);
 
     $settings = $this->getSettings();
