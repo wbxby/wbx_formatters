@@ -92,11 +92,12 @@ class ProductMediaGalleryFieldFormatter extends MediaThumbnailFormatter {
     array $third_party_settings,
     AccountInterface $current_user,
     ImageStyleStorageInterface $image_style_storage,
+    FileUrlGeneratorInterface $file_url_generator,
     RendererInterface $renderer,
     EntityDisplayRepositoryInterface $entity_display_repository,
     EntityTypeManagerInterface $entityTypeManager
   ) {
-    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $current_user, $image_style_storage, $renderer);
+    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $current_user, $image_style_storage, $file_url_generator, $renderer);
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entityTypeManager;
   }
@@ -115,6 +116,7 @@ class ProductMediaGalleryFieldFormatter extends MediaThumbnailFormatter {
       $configuration['third_party_settings'],
       $container->get('current_user'),
       $container->get('entity_type.manager')->getStorage('image_style'),
+      $container->get('file_url_generator'),
       $container->get('renderer'),
       $container->get('entity_display.repository'),
       $container->get('entity_type.manager')
