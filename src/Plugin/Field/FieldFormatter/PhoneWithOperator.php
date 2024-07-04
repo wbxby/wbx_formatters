@@ -125,7 +125,7 @@ class PhoneWithOperator extends ListBase {
     $element = [];
     $anyItem = reset($items);
     $anyItem = reset($anyItem);
-    $definition = $anyItem->getFieldDefinition();
+    $definition = $items->getFieldDefinition();
     $item_settings = $definition->get('settings');
     $allowed_values = $item_settings['first']['allowed_values'];
     $phones = [];
